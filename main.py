@@ -14,6 +14,7 @@ body{background:#060d1e;color:#e2e8f0;font-family:system-ui;padding:10px;margin:
 .stat{background:#0f1c36;border:1px solid #1e355e;border-radius:10px;padding:10px}
 .s-lbl{font-size:8px;color:#64748b;font-weight:800;letter-spacing:.08em}.s-val{font-weight:900;margin-top:4px;font-size:14px}
 .btn{background:#facc15;color:#000;border:none;border-radius:8px;padding:10px 16px;font-weight:900;cursor:pointer}
+.btn-ghost{border:1px solid #1e355e;background:#0f1c36;color:#fff;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:800}
 .btn-sm{padding:5px 8px;font-size:11px;border-radius:6px;margin:2px;cursor:pointer;border:1px solid #1e355e;background:#0f1c36;color:#fff}
 .btn-sm.green{border-color:#22c55e;color:#22c55e}.btn-sm.red{border-color:#ef4444;color:#ef4444}
 .row{background:#0e1c36;border:1px solid #1e355e;border-radius:12px;padding:12px;margin:8px 0;display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;align-items:center}
@@ -21,13 +22,18 @@ body{background:#060d1e;color:#e2e8f0;font-family:system-ui;padding:10px;margin:
 .badge{font-size:8px;padding:2px 6px;border-radius:6px;font-weight:800;margin-left:4px}
 .Active{background:#052e16;color:#22c55e}.Growing{background:#422006;color:#facc15}.Harvesting{background:#042f2e;color:#2dd4bf}.In{background:#1e1b4b;color:#a5b4fc}
 .prog{height:4px;background:#0b1428;border-radius:4px;margin-top:6px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,#facc15,#22c55e)}
+.tabs{display:flex;gap:6px;margin:8px 0}.tab{padding:7px 12px;border-radius:20px;border:1px solid #1e355e;background:#0f1c36;cursor:pointer;font-size:11px;font-weight:800}
+.tab.active{background:#facc15;color:#000;border-color:#facc15}
+.report-box{background:#0f1c36;border:1px solid #facc15;border-radius:12px;padding:12px;margin-top:10px}
 .modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:99}
-.modal-box{background:#0f1c36;border:1px solid #1e355e;border-radius:14px;padding:20px;width:92%;max-width:400px}
+.modal-box{background:#0f1c36;border:1px solid #1e355e;border-radius:14px;padding:20px;width:92%;max-width:500px;max-height:90vh;overflow:auto}
 input,select{width:100%;padding:10px;margin:6px 0;border-radius:8px;border:1px solid #1e355e;background:#060d1e;color:#fff;box-sizing:border-box}
+table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px} th{color:#64748b;text-align:left;font-size:9px;padding:6px;border-bottom:1px solid #1e355e} td{padding:7px 6px;border-bottom:1px solid #0b1428}
 </style></head><body>
 <div class="header">
   <div class="logo">ELSHADDAI'S <span>ENTERPRISES</span> • HQ</div>
   <div style="display:flex;gap:8px;align-items:center">
+    <button class="btn-ghost" onclick="openReport()">📊 REPORTS</button>
     <button class="btn" onclick="openAdd()">+ ADD VENTURE</button>
     <div class="live">● LIVE</div>
   </div>
@@ -36,16 +42,25 @@ input,select{width:100%;padding:10px;margin:6px 0;border-radius:8px;border:1px s
 <div class="stats" id="stats"></div>
 <div id="list"></div>
 
+<!-- REPORTS MODAL -->
+<div class="modal" id="reportModal"><div class="modal-box">
+<h3 style="margin:0 0 10px 0">📊 Elshaddai's Reports</h3>
+<div class="tabs"><div class="tab active" id="tDaily" onclick="gen('daily')">DAILY</div><div class="tab" id="tWeekly" onclick="gen('weekly')">WEEKLY</div><div class="tab" id="tMonthly" onclick="gen('monthly')">MONTHLY</div><div class="tab" id="tYearly" onclick="gen('yearly')">YEARLY</div></div>
+<div id="reportOut" class="report-box"></div>
+<div style="display:flex;gap:8px;margin-top:12px"><button class="btn" onclick="downloadCSV()" style="flex:1">⬇️ CSV</button><button class="btn-ghost" onclick="closeReport()" style="flex:1">CLOSE</button></div>
+</div></div>
+
+<!-- ADD MODAL -->
 <div class="modal" id="modal"><div class="modal-box">
 <h3 id="mTitle" style="margin-bottom:8px">Add Venture</h3>
 <input id="vName" placeholder="Name e.g. Elshaddai's Rentals">
-<input id="vLoc" placeholder="Location e.g. Majengo / Eldoret">
+<input id="vLoc" placeholder="Location e.g. Musembe">
 <select id="vType"><option>Real Estate</option><option>Agribusiness</option><option>Retail</option><option>Livestock</option><option>Aquaculture</option><option>Manufacturing</option><option>Health</option><option>Contract</option><option>Green Energy</option><option>Poultry</option><option>Horticulture</option></select>
 <input id="vCap" type="number" placeholder="Capital KES">
 <input id="vVal" type="number" placeholder="Current Value KES">
 <input id="vInc" type="number" placeholder="Monthly Income KES">
 <select id="vStatus"><option>Active</option><option>Growing</option><option>Harvesting</option><option>In Progress</option></select>
-<div style="display:flex;gap:8px;margin-top:12px"><button class="btn" onclick="saveVenture()" style="flex:1">SAVE</button><button class="btn-sm" onclick="closeModal()" style="flex:1;text-align:center;padding:10px">CANCEL</button></div>
+<div style="display:flex;gap:8px;margin-top:12px"><button class="btn" onclick="saveVenture()" style="flex:1">SAVE</button><button class="btn-ghost" onclick="closeModal()" style="flex:1">CANCEL</button></div>
 </div></div>
 
 <script>
@@ -65,14 +80,15 @@ let ventures = JSON.parse(localStorage.getItem('elshaddai_v3') || 'null') || [
 {id:"PIG",name:"Pig Farming",loc:"home",type:"Livestock",cap:400000,val:550000,inc:75000,status:"Active",icon:"🐖"},
 {id:"PHARMA",name:"Pharmacy",loc:"Nairobi",type:"Health",cap:1000000,val:1350000,inc:160000,status:"Active",icon:"💊"}
 ];
-let editId=null;
+let editId=null, lastPeriod='daily';
+
 function persist(){localStorage.setItem('elshaddai_v3',JSON.stringify(ventures)); render();}
 function render(){
   let cap=ventures.reduce((s,v)=>s+v.cap,0), val=ventures.reduce((s,v)=>s+v.val,0), inc=ventures.reduce((s,v)=>s+v.inc,0), pnl=val-cap;
   document.getElementById('stats').innerHTML=`
   <div class="stat"><div class="s-lbl">TOTAL VALUE</div><div class="s-val">KES ${val.toLocaleString()}</div><div style="font-size:10px;color:#22c55e">+${pnl.toLocaleString()} PnL</div></div>
   <div class="stat"><div class="s-lbl">CAPITAL DEPLOYED</div><div class="s-val">KES ${cap.toLocaleString()}</div><div style="font-size:9px;color:#64748b">${ventures.length} Ventures</div></div>
-  <div class="stat"><div class="s-lbl">MONTHLY INCOME</div><div class="s-val" style="color:#facc15">KES ${inc.toLocaleString()}</div></div>
+  <div class="stat"><div class="s-lbl">MONTHLY INCOME</div><div class="s-val" style="color:#facc15">KES ${inc.toLocaleString()}</div><div style="font-size:9px;color:#64748b">Daily ~KES ${Math.round(inc/30).toLocaleString()}</div></div>
   <div class="stat"><div class="s-lbl">GROWTH</div><div class="s-val">${((val/cap-1)*100).toFixed(1)}%</div></div>`;
   let h='';
   ventures.forEach((v,i)=>{
@@ -90,23 +106,37 @@ function render(){
   });
   document.getElementById('list').innerHTML=h;
 }
-function modCap(i,dir){
-  let amt=parseInt(prompt(dir>0?'Add how much capital? (KES)':'Subtract how much? (KES)','50000'));
-  if(!amt || isNaN(amt)) return;
-  if(dir>0){ ventures[i].cap+=amt; ventures[i].val+=amt; } else { ventures[i].cap=Math.max(0,ventures[i].cap-amt); ventures[i].val=Math.max(0,ventures[i].val-amt); }
-  persist();
+function openReport(){document.getElementById('reportModal').style.display='flex'; gen('daily');}
+function closeReport(){document.getElementById('reportModal').style.display='none';}
+function gen(period){
+  lastPeriod=period;
+  ['Daily','Weekly','Monthly','Yearly'].forEach(p=>{let el=document.getElementById('t'+p); if(el) el.classList.remove('active');});
+  let act=document.getElementById('t'+period.charAt(0).toUpperCase()+period.slice(1)); if(act) act.classList.add('active');
+  let mult=period==='daily'?1/30:period==='weekly'?1/4:period==='monthly'?1:12;
+  let totalInc=ventures.reduce((s,v)=>s+v.inc*mult,0);
+  let totalCap=ventures.reduce((s,v)=>s+v.cap,0);
+  let totalVal=ventures.reduce((s,v)=>s+v.val,0);
+  let top=[...ventures].sort((a,b)=>(b.val/b.cap)-(a.val/a.cap))[0];
+  let rows=ventures.map(v=>`<tr><td>${v.icon} ${v.name}</td><td>${v.loc}</td><td>KES ${Math.round(v.inc*mult).toLocaleString()}</td><td style="color:${v.val>=v.cap?'#22c55e':'#ef4444'}">${(v.val-v.cap).toLocaleString()}</td><td>${((v.val/v.cap-1)*100).toFixed(1)}%</td></tr>`).join('');
+  document.getElementById('reportOut').innerHTML=`
+    <div style="display:flex;justify-content:space-between;gap:10px"><div><div style="font-size:9px;color:#facc15;letter-spacing:.1em">${period.toUpperCase()} REPORT • ${new Date().toLocaleDateString()}</div><div style="font-weight:900;font-size:18px;margin-top:4px;color:#facc15">KES ${Math.round(totalInc).toLocaleString()}</div><div style="font-size:10px;color:#94a3b8">Total ${period} income from ${ventures.length} ventures</div></div><div style="text-align:right"><div style="font-size:8px;color:#64748b">TOP PERFORMER</div><div style="font-weight:800;font-size:12px">${top.icon} ${top.name} • ${((top.val/top.cap-1)*100).toFixed(1)}%</div><div style="font-size:8px;color:#64748b;margin-top:6px">TOTAL VALUE</div><div style="font-size:11px">KES ${totalVal.toLocaleString()}</div></div></div>
+    <table><tr><th>VENTURE</th><th>LOCATION (YOURS)</th><th>INCOME</th><th>PnL</th><th>GROWTH</th></tr>${rows}</table>
+    <div style="margin-top:10px;font-size:10px;color:#94a3b8">Capital: KES ${totalCap.toLocaleString()} • Value: KES ${totalVal.toLocaleString()} • PnL: KES ${(totalVal-totalCap).toLocaleString()} • Musembe to Nairobi empire</div>
+  `;
 }
+function downloadCSV(){
+  let mult=lastPeriod==='daily'?1/30:lastPeriod==='weekly'?1/4:lastPeriod==='monthly'?1:12;
+  let csv='Venture,Location,Type,Capital,Value,PnL,Monthly Income,'+lastPeriod+' Income,Growth %\\n';
+  ventures.forEach(v=>{csv+=`"${v.name}","${v.loc}","${v.type}",${v.cap},${v.val},${v.val-v.cap},${v.inc},${Math.round(v.inc*mult)},${((v.val/v.cap-1)*100).toFixed(1)}\\n`;});
+  let blob=new Blob([csv],{type:'text/csv'}); let url=URL.createObjectURL(blob);
+  let a=document.createElement('a'); a.href=url; a.download=`Elshaddai_${lastPeriod}_Report_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+}
+function modCap(i,dir){let amt=parseInt(prompt(dir>0?'Add how much capital? (KES)':'Subtract how much? (KES)','50000')); if(!amt||isNaN(amt)) return; if(dir>0){ventures[i].cap+=amt; ventures[i].val+=amt;} else {ventures[i].cap=Math.max(0,ventures[i].cap-amt); ventures[i].val=Math.max(0,ventures[i].val-amt);} persist();}
 function openAdd(){editId=null; document.getElementById('mTitle').innerText='Add New Venture'; document.getElementById('modal').style.display='flex';}
 function editV(i){editId=i; let v=ventures[i]; vName.value=v.name; vLoc.value=v.loc; vType.value=v.type; vCap.value=v.cap; vVal.value=v.val; vInc.value=v.inc; vStatus.value=v.status; document.getElementById('mTitle').innerText='Edit '+v.name; document.getElementById('modal').style.display='flex';}
 function closeModal(){document.getElementById('modal').style.display='none';}
-function saveVenture(){
-  let obj={id:(vName.value.slice(0,4).toUpperCase()||'NEW')+Date.now().toString().slice(-3), name:vName.value, loc:vLoc.value, type:vType.value, cap:parseInt(vCap.value)||0, val:parseInt(vVal.value)||0, inc:parseInt(vInc.value)||0, status:vStatus.value, icon:"📦"};
-  if(!obj.name) return alert('Name required');
-  if(editId!==null){obj.id=ventures[editId].id; obj.icon=ventures[editId].icon; ventures[editId]=obj;} else ventures.push(obj);
-  closeModal(); persist();
-  vName.value=''; vLoc.value=''; vCap.value=''; vVal.value=''; vInc.value='';
-}
-function delV(i){if(confirm('Delete '+ventures[i].name+'?')){ ventures.splice(i,1); persist(); }}
+function saveVenture(){let obj={id:(vName.value.slice(0,4).toUpperCase()||'NEW')+Date.now().toString().slice(-3), name:vName.value, loc:vLoc.value, type:vType.value, cap:parseInt(vCap.value)||0, val:parseInt(vVal.value)||0, inc:parseInt(vInc.value)||0, status:vStatus.value, icon:"📦"}; if(!obj.name) return alert('Name required'); if(editId!==null){obj.id=ventures[editId].id; obj.icon=ventures[editId].icon; ventures[editId]=obj;} else ventures.push(obj); closeModal(); persist(); vName.value=''; vLoc.value=''; vCap.value=''; vVal.value=''; vInc.value='';}
+function delV(i){if(confirm('Delete '+ventures[i].name+'?')){ventures.splice(i,1); persist();}}
 render();
 </script></body></html>
 """
