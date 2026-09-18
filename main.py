@@ -22,12 +22,15 @@ body{background:#060d1e;color:#e2e8f0;font-family:system-ui;padding:10px;margin:
 .Active{background:#052e16;color:#22c55e}.Growing{background:#422006;color:#facc15}.Harvesting{background:#042f2e;color:#2dd4bf}.In{background:#1e1b4b;color:#a5b4fc}
 .prog{height:4px;background:#0b1428;border-radius:4px;margin-top:6px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,#facc15,#22c55e)}
 .modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:99}
-.modal-box{background:#0f1c36;border:1px solid #1e355e;border-radius:14px;padding:20px;width:92%;max-width:400px}
+.modal-box{background:#0f1c36;border:1px solid #1e355e;border-radius:14px;padding:20px;width:92%;max-width:500px;max-height:85vh;overflow:auto}
 input,select{width:100%;padding:10px;margin:6px 0;border-radius:8px;border:1px solid #1e355e;background:#060d1e;color:#fff;box-sizing:border-box}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px} th,td{border-bottom:1px solid #1e355e;padding:6px;text-align:left}
 </style></head><body>
 <div class="header">
   <div class="logo">ELSHADDAI'S <span>ENTERPRISES</span> • HQ</div>
   <div style="display:flex;gap:8px;align-items:center">
+    <button class="btn-sm" onclick="openReports()">📊 REPORTS</button>
+    <button class="btn-sm" onclick="downloadCSV()">⬇️ CSV</button>
     <button class="btn" onclick="openAdd()">+ ADD VENTURE</button>
     <div class="live">● LIVE</div>
   </div>
@@ -48,9 +51,17 @@ input,select{width:100%;padding:10px;margin:6px 0;border-radius:8px;border:1px s
 <div style="display:flex;gap:8px;margin-top:12px"><button class="btn" onclick="saveVenture()" style="flex:1">SAVE</button><button class="btn-sm" onclick="closeModal()" style="flex:1;text-align:center;padding:10px">CANCEL</button></div>
 </div></div>
 
+<div class="modal" id="reportModal"><div class="modal-box">
+<h3>📊 Elshaddai Reports</h3>
+<div id="reportContent"></div>
+<div style="display:flex;gap:8px;margin-top:12px">
+<button class="btn" onclick="downloadCSV()" style="flex:1">DOWNLOAD CSV</button>
+<button class="btn-sm" onclick="closeReports()" style="flex:1;padding:10px">CLOSE</button>
+</div>
+</div></div>
+
 <script>
-// VERSION CONTROL - Ukibadilisha figures hapa chini, badilisha v4 kuja v5 ndio investors waone mpya
-const APP_VERSION = 'v4';
+const APP_VERSION = 'v5';
 const SERVER_DEFAULT = [
 {id:"RENTALS",name:"Elshaddai's Rentals",loc:"Musembe",type:"Real Estate",cap:2500000,val:3100000,inc:140000,status:"Active",icon:"🏠"},
 {id:"SUGAR",name:"Majengo Sugarcane",loc:"Majengo",type:"Agribusiness",cap:900000,val:1100000,inc:150000,status:"Harvesting",icon:"🎋"},
@@ -68,7 +79,6 @@ const SERVER_DEFAULT = [
 {id:"PHARMA",name:"Pharmacy",loc:"Nairobi",type:"Health",cap:1000000,val:1350000,inc:160000,status:"Active",icon:"💊"}
 ];
 
-// HAPA NDIO FIX YA INVESTORS: Kama version ni mpya, overwrite localStorage ya kila mtu
 let savedVersion = localStorage.getItem('elshaddai_version');
 let ventures;
 if(savedVersion!== APP_VERSION){
@@ -112,7 +122,7 @@ function modCap(i,dir){
   if(dir>0){ ventures[i].cap+=amt; ventures[i].val+=amt; } else { ventures[i].cap=Math.max(0,ventures[i].cap-amt); ventures[i].val=Math.max(0,ventures[i].val-amt); }
   persist();
 }
-function openAdd(){editId=null; document.getElementById('mTitle').innerText='Add New Venture'; document.getElementById('vName').value=''; document.getElementById('vLoc').value=''; document.getElementById('vCap').value=''; document.getElementById('vVal').value=''; document.getElementById('vInc').value=''; document.getElementById('modal').style.display='flex';}
+function openAdd(){editId=null; document.getElementById('mTitle').innerText='Add New Venture'; vName.value=''; vLoc.value=''; vCap.value=''; vVal.value=''; vInc.value=''; document.getElementById('modal').style.display='flex';}
 function editV(i){editId=i; let v=ventures[i]; vName.value=v.name; vLoc.value=v.loc; vType.value=v.type; vCap.value=v.cap; vVal.value=v.val; vInc.value=v.inc; vStatus.value=v.status; document.getElementById('mTitle').innerText='Edit '+v.name; document.getElementById('modal').style.display='flex';}
 function closeModal(){document.getElementById('modal').style.display='none';}
 function saveVenture(){
@@ -122,6 +132,41 @@ function saveVenture(){
   closeModal(); persist();
 }
 function delV(i){if(confirm('Delete '+ventures[i].name+'?')){ ventures.splice(i,1); persist(); }}
+
+function openReports(){
+  let cap=ventures.reduce((s,v)=>s+(v.cap||0),0), val=ventures.reduce((s,v)=>s+(v.val||0),0), inc=ventures.reduce((s,v)=>s+(v.inc||0),0);
+  let byType={}; ventures.forEach(v=>{ byType[v.type]=(byType[v.type]||0)+v.val; });
+  let typeRows=Object.entries(byType).map(([t,v])=>`<tr><td>${t}</td><td>KES ${v.toLocaleString()}</td><td>${((v/val)*100).toFixed(1)}%</td></tr>`).join('');
+  document.getElementById('reportContent').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0">
+      <div class="stat"><div class="s-lbl">TOTAL CAP</div><div class="s-val">KES ${cap.toLocaleString()}</div></div>
+      <div class="stat"><div class="s-lbl">TOTAL VAL</div><div class="s-val">KES ${val.toLocaleString()}</div></div>
+      <div class="stat"><div class="s-lbl">MONTHLY INC</div><div class="s-val" style="color:#facc15">KES ${inc.toLocaleString()}</div></div>
+      <div class="stat"><div class="s-lbl">PROFIT</div><div class="s-val" style="color:#22c55e">KES ${(val-cap).toLocaleString()}</div></div>
+    </div>
+    <h4 style="margin-top:12px">By Type</h4>
+    <table><tr><th>Type</th><th>Value</th><th>%</th></tr>${typeRows}</table>
+    <h4 style="margin-top:12px">All Ventures (Daily Breakdown)</h4>
+    <table><tr><th>Name</th><th>Daily</th><th>Growth</th></tr>
+    ${ventures.map(v=>`<tr><td>${v.name}</td><td>KES ${Math.round((v.inc||0)/30).toLocaleString()}</td><td>${v.cap>0?((v.val/v.cap-1)*100).toFixed(1):'0.0'}%</td></tr>`).join('')}
+    </table>
+  `;
+  document.getElementById('reportModal').style.display='flex';
+}
+function closeReports(){document.getElementById('reportModal').style.display='none';}
+function downloadCSV(){
+  let header="Name,Location,Type,Capital,Value,PnL,Growth%,Monthly Income,Daily Income,Status\\n";
+  let rows=ventures.map(v=>{
+    let pnl=(v.val||0)-(v.cap||0);
+    let perc=v.cap>0?((v.val/v.cap-1)*100).toFixed(1):0;
+    let daily=Math.round((v.inc||0)/30);
+    return `"${v.name}","${v.loc}","${v.type}",${v.cap},${v.val},${pnl},${perc},${v.inc},${daily},"${v.status}"`;
+  }).join("\\n");
+  let blob=new Blob([header+rows],{type:"text/csv"});
+  let url=URL.createObjectURL(blob);
+  let a=document.createElement('a'); a.href=url; a.download=`Elshaddai_Report_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  URL.revokeObjectURL(url);
+}
 render();
 </script></body></html>
 """
