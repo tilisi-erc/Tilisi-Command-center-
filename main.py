@@ -35,33 +35,26 @@ table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px} th,td{
     <div class="live">● LIVE</div>
   </div>
 </div>
-
 <div class="stats" id="stats"></div>
 <div id="list"></div>
-
 <div class="modal" id="modal"><div class="modal-box">
-<h3 id="mTitle" style="margin-bottom:8px">Add Venture</h3>
-<input id="vName" placeholder="Name e.g. Elshaddai's Rentals">
-<input id="vLoc" placeholder="Location e.g. Majengo / Eldoret">
+<h3 id="mTitle">Add Venture</h3>
+<input id="vName" placeholder="Name">
+<input id="vLoc" placeholder="Location">
 <select id="vType"><option>Real Estate</option><option>Agribusiness</option><option>Retail</option><option>Livestock</option><option>Aquaculture</option><option>Manufacturing</option><option>Health</option><option>Contract</option><option>Green Energy</option><option>Poultry</option><option>Horticulture</option></select>
 <input id="vCap" type="number" placeholder="Capital KES">
 <input id="vVal" type="number" placeholder="Current Value KES">
 <input id="vInc" type="number" placeholder="Monthly Income KES">
 <select id="vStatus"><option>Active</option><option>Growing</option><option>Harvesting</option><option>In Progress</option></select>
-<div style="display:flex;gap:8px;margin-top:12px"><button class="btn" onclick="saveVenture()" style="flex:1">SAVE</button><button class="btn-sm" onclick="closeModal()" style="flex:1;text-align:center;padding:10px">CANCEL</button></div>
+<div style="display:flex;gap:8px;margin-top:12px"><button class="btn" onclick="saveVenture()" style="flex:1">SAVE</button><button class="btn-sm" onclick="closeModal()" style="flex:1;padding:10px">CANCEL</button></div>
 </div></div>
-
 <div class="modal" id="reportModal"><div class="modal-box">
 <h3>📊 Elshaddai Reports</h3>
 <div id="reportContent"></div>
-<div style="display:flex;gap:8px;margin-top:12px">
-<button class="btn" onclick="downloadCSV()" style="flex:1">DOWNLOAD CSV</button>
-<button class="btn-sm" onclick="closeReports()" style="flex:1;padding:10px">CLOSE</button>
-</div>
+<div style="display:flex;gap:8px;margin-top:12px"><button class="btn" onclick="downloadCSV()" style="flex:1">DOWNLOAD CSV</button><button class="btn-sm" onclick="closeReports()" style="flex:1;padding:10px">CLOSE</button></div>
 </div></div>
-
 <script>
-const APP_VERSION = 'v5';
+const APP_VERSION = 'v6';
 const SERVER_DEFAULT = [
 {id:"RENTALS",name:"Elshaddai's Rentals",loc:"Musembe",type:"Real Estate",cap:2500000,val:3100000,inc:140000,status:"Active",icon:"🏠"},
 {id:"SUGAR",name:"Majengo Sugarcane",loc:"Majengo",type:"Agribusiness",cap:900000,val:1100000,inc:150000,status:"Harvesting",icon:"🎋"},
@@ -79,15 +72,15 @@ const SERVER_DEFAULT = [
 {id:"PHARMA",name:"Pharmacy",loc:"Nairobi",type:"Health",cap:1000000,val:1350000,inc:160000,status:"Active",icon:"💊"}
 ];
 
-let savedVersion = localStorage.getItem('elshaddai_version');
-let ventures;
-if(savedVersion!== APP_VERSION){
-  ventures = SERVER_DEFAULT;
-  localStorage.setItem('elshaddai_v3', JSON.stringify(ventures));
+// === FIX YA INVESTORS ===
+const savedVer = localStorage.getItem('elshaddai_version');
+if(savedVer !== APP_VERSION){
+  localStorage.setItem('elshaddai_v3', JSON.stringify(SERVER_DEFAULT));
   localStorage.setItem('elshaddai_version', APP_VERSION);
-} else {
-  ventures = JSON.parse(localStorage.getItem('elshaddai_v3') || 'null') || SERVER_DEFAULT;
 }
+let ventures = JSON.parse(localStorage.getItem('elshaddai_v3')) || SERVER_DEFAULT;
+// Hakikisha kama kuna corrupt, rudisha default
+if(!Array.isArray(ventures) || ventures.length===0) ventures = SERVER_DEFAULT;
 
 let editId=null;
 function persist(){localStorage.setItem('elshaddai_v3',JSON.stringify(ventures)); render();}
@@ -116,57 +109,15 @@ function render(){
   });
   document.getElementById('list').innerHTML=h;
 }
-function modCap(i,dir){
-  let amt=parseInt(prompt(dir>0?'Add how much capital? (KES)':'Subtract how much? (KES)','50000'));
-  if(!amt || isNaN(amt)) return;
-  if(dir>0){ ventures[i].cap+=amt; ventures[i].val+=amt; } else { ventures[i].cap=Math.max(0,ventures[i].cap-amt); ventures[i].val=Math.max(0,ventures[i].val-amt); }
-  persist();
-}
-function openAdd(){editId=null; document.getElementById('mTitle').innerText='Add New Venture'; vName.value=''; vLoc.value=''; vCap.value=''; vVal.value=''; vInc.value=''; document.getElementById('modal').style.display='flex';}
-function editV(i){editId=i; let v=ventures[i]; vName.value=v.name; vLoc.value=v.loc; vType.value=v.type; vCap.value=v.cap; vVal.value=v.val; vInc.value=v.inc; vStatus.value=v.status; document.getElementById('mTitle').innerText='Edit '+v.name; document.getElementById('modal').style.display='flex';}
-function closeModal(){document.getElementById('modal').style.display='none';}
-function saveVenture(){
-  let obj={id:(vName.value.slice(0,4).toUpperCase()||'NEW')+Date.now().toString().slice(-3), name:vName.value, loc:vLoc.value, type:vType.value, cap:parseInt(vCap.value)||0, val:parseInt(vVal.value)||0, inc:parseInt(vInc.value)||0, status:vStatus.value, icon:"📦"};
-  if(!obj.name) return alert('Name required');
-  if(editId!==null){obj.id=ventures[editId].id; obj.icon=ventures[editId].icon; ventures[editId]=obj;} else ventures.push(obj);
-  closeModal(); persist();
-}
-function delV(i){if(confirm('Delete '+ventures[i].name+'?')){ ventures.splice(i,1); persist(); }}
-
-function openReports(){
-  let cap=ventures.reduce((s,v)=>s+(v.cap||0),0), val=ventures.reduce((s,v)=>s+(v.val||0),0), inc=ventures.reduce((s,v)=>s+(v.inc||0),0);
-  let byType={}; ventures.forEach(v=>{ byType[v.type]=(byType[v.type]||0)+v.val; });
-  let typeRows=Object.entries(byType).map(([t,v])=>`<tr><td>${t}</td><td>KES ${v.toLocaleString()}</td><td>${((v/val)*100).toFixed(1)}%</td></tr>`).join('');
-  document.getElementById('reportContent').innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0">
-      <div class="stat"><div class="s-lbl">TOTAL CAP</div><div class="s-val">KES ${cap.toLocaleString()}</div></div>
-      <div class="stat"><div class="s-lbl">TOTAL VAL</div><div class="s-val">KES ${val.toLocaleString()}</div></div>
-      <div class="stat"><div class="s-lbl">MONTHLY INC</div><div class="s-val" style="color:#facc15">KES ${inc.toLocaleString()}</div></div>
-      <div class="stat"><div class="s-lbl">PROFIT</div><div class="s-val" style="color:#22c55e">KES ${(val-cap).toLocaleString()}</div></div>
-    </div>
-    <h4 style="margin-top:12px">By Type</h4>
-    <table><tr><th>Type</th><th>Value</th><th>%</th></tr>${typeRows}</table>
-    <h4 style="margin-top:12px">All Ventures (Daily Breakdown)</h4>
-    <table><tr><th>Name</th><th>Daily</th><th>Growth</th></tr>
-    ${ventures.map(v=>`<tr><td>${v.name}</td><td>KES ${Math.round((v.inc||0)/30).toLocaleString()}</td><td>${v.cap>0?((v.val/v.cap-1)*100).toFixed(1):'0.0'}%</td></tr>`).join('')}
-    </table>
-  `;
-  document.getElementById('reportModal').style.display='flex';
-}
-function closeReports(){document.getElementById('reportModal').style.display='none';}
-function downloadCSV(){
-  let header="Name,Location,Type,Capital,Value,PnL,Growth%,Monthly Income,Daily Income,Status\\n";
-  let rows=ventures.map(v=>{
-    let pnl=(v.val||0)-(v.cap||0);
-    let perc=v.cap>0?((v.val/v.cap-1)*100).toFixed(1):0;
-    let daily=Math.round((v.inc||0)/30);
-    return `"${v.name}","${v.loc}","${v.type}",${v.cap},${v.val},${pnl},${perc},${v.inc},${daily},"${v.status}"`;
-  }).join("\\n");
-  let blob=new Blob([header+rows],{type:"text/csv"});
-  let url=URL.createObjectURL(blob);
-  let a=document.createElement('a'); a.href=url; a.download=`Elshaddai_Report_${new Date().toISOString().slice(0,10)}.csv`; a.click();
-  URL.revokeObjectURL(url);
-}
+function modCap(i,dir){let amt=parseInt(prompt(dir>0?'Add how much capital?':'Subtract how much?','50000')); if(!amt||isNaN(amt))return; if(dir>0){ventures[i].cap+=amt; ventures[i].val+=amt;}else{ventures[i].cap=Math.max(0,ventures[i].cap-amt); ventures[i].val=Math.max(0,ventures[i].val-amt);} persist();}
+function openAdd(){editId=null; mTitle.innerText='Add New Venture'; vName.value=''; vLoc.value=''; vCap.value=''; vVal.value=''; vInc.value=''; modal.style.display='flex';}
+function editV(i){editId=i; let v=ventures[i]; vName.value=v.name; vLoc.value=v.loc; vType.value=v.type; vCap.value=v.cap; vVal.value=v.val; vInc.value=v.inc; vStatus.value=v.status; mTitle.innerText='Edit '+v.name; modal.style.display='flex';}
+function closeModal(){modal.style.display='none';}
+function saveVenture(){let obj={id:(vName.value.slice(0,4).toUpperCase()||'NEW')+Date.now().toString().slice(-3), name:vName.value, loc:vLoc.value, type:vType.value, cap:parseInt(vCap.value)||0, val:parseInt(vVal.value)||0, inc:parseInt(vInc.value)||0, status:vStatus.value, icon:"📦"}; if(!obj.name)return alert('Name required'); if(editId!==null){obj.id=ventures[editId].id; obj.icon=ventures[editId].icon; ventures[editId]=obj;} else ventures.push(obj); closeModal(); persist();}
+function delV(i){if(confirm('Delete '+ventures[i].name+'?')){ventures.splice(i,1); persist();}}
+function openReports(){let cap=ventures.reduce((s,v)=>s+(v.cap||0),0), val=ventures.reduce((s,v)=>s+(v.val||0),0), inc=ventures.reduce((s,v)=>s+(v.inc||0),0); let byType={}; ventures.forEach(v=>{byType[v.type]=(byType[v.type]||0)+v.val;}); let typeRows=Object.entries(byType).map(([t,v])=>`<tr><td>${t}</td><td>KES ${v.toLocaleString()}</td><td>${((v/val)*100).toFixed(1)}%</td></tr>`).join(''); reportContent.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0"><div class="stat"><div class="s-lbl">TOTAL CAP</div><div class="s-val">KES ${cap.toLocaleString()}</div></div><div class="stat"><div class="s-lbl">TOTAL VAL</div><div class="s-val">KES ${val.toLocaleString()}</div></div><div class="stat"><div class="s-lbl">MONTHLY INC</div><div class="s-val" style="color:#facc15">KES ${inc.toLocaleString()}</div></div><div class="stat"><div class="s-lbl">PROFIT</div><div class="s-val" style="color:#22c55e">KES ${(val-cap).toLocaleString()}</div></div></div><h4>By Type</h4><table><tr><th>Type</th><th>Value</th><th>%</th></tr>${typeRows}</table><h4 style="margin-top:12px">All Ventures (Daily)</h4><table><tr><th>Name</th><th>Daily</th><th>Growth</th></tr>${ventures.map(v=>`<tr><td>${v.name}</td><td>KES ${Math.round((v.inc||0)/30).toLocaleString()}</td><td>${v.cap>0?((v.val/v.cap-1)*100).toFixed(1):'0.0'}%</td></tr>`).join('')}</table>`; reportModal.style.display='flex';}
+function closeReports(){reportModal.style.display='none';}
+function downloadCSV(){let header="Name,Location,Type,Capital,Value,PnL,Growth%,Monthly Income,Daily Income,Status\\n"; let rows=ventures.map(v=>{let pnl=(v.val||0)-(v.cap||0); let perc=v.cap>0?((v.val/v.cap-1)*100).toFixed(1):0; let daily=Math.round((v.inc||0)/30); return `"${v.name}","${v.loc}","${v.type}",${v.cap},${v.val},${pnl},${perc},${v.inc},${daily},"${v.status}"`;}).join("\\n"); let blob=new Blob([header+rows],{type:"text/csv"}); let url=URL.createObjectURL(blob); let a=document.createElement('a'); a.href=url; a.download=`Elshaddai_Report_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);}
 render();
 </script></body></html>
 """
